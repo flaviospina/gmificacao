@@ -697,6 +697,10 @@ CREATE TABLE IF NOT EXISTS sessoes (
 -- 28. VIEWS
 -- ============================================================
 
+-- Rankings SEM window functions (RANK() OVER exige MySQL 8;
+-- estas versões rodam também em MySQL 5.6/5.7 — Hostgator compartilhado).
+-- A posição é RANK: 1 + quantos alunos do mesmo grupo têm XP maior (empates dividem posição).
+
 -- Ranking por turma (V2: expõe turma_id)
 CREATE OR REPLACE VIEW vw_ranking_turma AS
 SELECT
@@ -709,9 +713,12 @@ SELECT
     COALESCE(ap.nivel_atual, 1)         AS nivel,
     COALESCE(ap.streak_dias, 0)         AS streak,
     COALESCE(ap.missoes_concluidas, 0)  AS missoes,
-    RANK() OVER (
-        PARTITION BY t.id
-        ORDER BY COALESCE(ap.xp_total, 0) DESC
+    (SELECT COUNT(*) + 1
+       FROM aluno_turma at3
+       JOIN usuarios u2 ON u2.id = at3.usuario_id AND u2.perfil = 'aluno' AND u2.ativo = 1
+       LEFT JOIN aluno_perfil ap2 ON ap2.aluno_id = u2.id
+      WHERE at3.turma_id = t.id AND at3.ativo = 1
+        AND COALESCE(ap2.xp_total, 0) > COALESCE(ap.xp_total, 0)
     ) AS posicao_turma
 FROM usuarios u
 JOIN aluno_turma at2  ON at2.usuario_id = u.id AND at2.ativo = 1
@@ -729,16 +736,19 @@ SELECT
     COALESCE(ap.xp_total, 0)            AS xp_total,
     COALESCE(ap.nivel_atual, 1)         AS nivel,
     COALESCE(ap.missoes_concluidas, 0)  AS missoes,
-    RANK() OVER (
-        PARTITION BY u.escola_id
-        ORDER BY COALESCE(ap.xp_total, 0) DESC
+    (SELECT COUNT(*) + 1
+       FROM usuarios u2
+       LEFT JOIN aluno_perfil ap2 ON ap2.aluno_id = u2.id
+      WHERE u2.escola_id = u.escola_id AND u2.perfil = 'aluno' AND u2.ativo = 1
+        AND COALESCE(ap2.xp_total, 0) > COALESCE(ap.xp_total, 0)
     ) AS posicao_escola
 FROM usuarios u
 LEFT JOIN aluno_perfil ap ON ap.aluno_id = u.id
 WHERE u.perfil = 'aluno' AND u.ativo = 1;
 
 -- [V2 · inédito] Ranking de Evolução — XP ganho na semana corrente
-CREATE OR REPLACE VIEW vw_ranking_evolucao AS
+-- (em duas views: a soma semanal e, sobre ela, a posição)
+CREATE OR REPLACE VIEW vw_evolucao_semana AS
 SELECT
     u.id        AS aluno_id,
     u.nome      AS aluno_nome,
@@ -746,11 +756,7 @@ SELECT
     u.escola_id,
     t.id        AS turma_id,
     t.nome      AS turma_nome,
-    COALESCE(SUM(xe.xp), 0) AS xp_semana,
-    RANK() OVER (
-        PARTITION BY t.id
-        ORDER BY COALESCE(SUM(xe.xp), 0) DESC
-    ) AS posicao_evolucao
+    COALESCE(SUM(xe.xp), 0) AS xp_semana
 FROM usuarios u
 JOIN aluno_turma at2 ON at2.usuario_id = u.id AND at2.ativo = 1
 JOIN turmas t        ON t.id = at2.turma_id
@@ -758,6 +764,14 @@ LEFT JOIN xp_eventos xe ON xe.aluno_id = u.id
        AND YEARWEEK(xe.criado_em, 1) = YEARWEEK(CURDATE(), 1)
 WHERE u.perfil = 'aluno' AND u.ativo = 1
 GROUP BY u.id, u.nome, u.avatar_url, u.escola_id, t.id, t.nome;
+
+CREATE OR REPLACE VIEW vw_ranking_evolucao AS
+SELECT
+    v.aluno_id, v.aluno_nome, v.avatar_url, v.escola_id, v.turma_id, v.turma_nome, v.xp_semana,
+    (SELECT COUNT(*) + 1 FROM vw_evolucao_semana v2
+      WHERE v2.turma_id = v.turma_id AND v2.xp_semana > v.xp_semana
+    ) AS posicao_evolucao
+FROM vw_evolucao_semana v;
 
 -- [V2 · inédito] Clima por turma — humor médio + participação (últimos 7 dias)
 CREATE OR REPLACE VIEW vw_clima_turma AS
