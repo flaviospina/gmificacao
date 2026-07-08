@@ -680,6 +680,20 @@ CREATE TABLE IF NOT EXISTS logs_acesso (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
+-- 27b. SESSÕES PHP NO BANCO (independe do save_path do host;
+--      criada automaticamente pelo sistema se não existir)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS sessoes (
+    id            VARCHAR(128) PRIMARY KEY,
+    dados         MEDIUMTEXT,
+    usuario_id    INT UNSIGNED NULL,
+    ip            VARCHAR(45) NULL,
+    expira_em     DATETIME NOT NULL,
+    atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_sessao_expira (expira_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
 -- 28. VIEWS
 -- ============================================================
 

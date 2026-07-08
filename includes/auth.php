@@ -7,6 +7,98 @@
 require_once ROOT_PATH . '/config/app.php';
 require_once ROOT_PATH . '/config/db.php';
 
+// ──────────────────────────────────────────────────────────
+//  Sessões gravadas no BANCO DE DADOS (tabela sessoes).
+//  Em hospedagem compartilhada o session.save_path do PHP às
+//  vezes é inválido/sem permissão e a sessão "evapora" entre
+//  requisições (sintoma: login ok → "sessão expirada").
+//  Gravando no MySQL, a persistência independe do host.
+// ──────────────────────────────────────────────────────────
+class SessaoBancoHandler implements SessionHandlerInterface {
+    private bool $tabela_ok = false;
+
+    private function garantirTabela(): void {
+        if ($this->tabela_ok) return;
+        try {
+            db()->exec(
+                'CREATE TABLE IF NOT EXISTS sessoes (
+                    id            VARCHAR(128) PRIMARY KEY,
+                    dados         MEDIUMTEXT,
+                    usuario_id    INT UNSIGNED NULL,
+                    ip            VARCHAR(45) NULL,
+                    expira_em     DATETIME NOT NULL,
+                    atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_sessao_expira (expira_em)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+            );
+            $this->tabela_ok = true;
+        } catch (PDOException $e) {
+            error_log('[Gamifica][Sessao] ' . $e->getMessage());
+        }
+    }
+
+    public function open(string $path, string $name): bool {
+        $this->garantirTabela();
+        return true;
+    }
+
+    public function close(): bool {
+        return true;
+    }
+
+    public function read(string $id): string|false {
+        try {
+            $stmt = db()->prepare('SELECT dados FROM sessoes WHERE id = ? AND expira_em > NOW()');
+            $stmt->execute([$id]);
+            $dados = $stmt->fetchColumn();
+            return $dados === false ? '' : (string)$dados;
+        } catch (PDOException $e) {
+            error_log('[Gamifica][Sessao] ' . $e->getMessage());
+            return '';
+        }
+    }
+
+    public function write(string $id, string $data): bool {
+        try {
+            db()->prepare(
+                'INSERT INTO sessoes (id, dados, usuario_id, ip, expira_em)
+                 VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))
+                 ON DUPLICATE KEY UPDATE dados = VALUES(dados), usuario_id = VALUES(usuario_id),
+                                         ip = VALUES(ip), expira_em = VALUES(expira_em)'
+            )->execute([
+                $id,
+                $data,
+                !empty($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : null,
+                substr($_SERVER['REMOTE_ADDR'] ?? '', 0, 45),
+                SESSION_TIMEOUT,
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            error_log('[Gamifica][Sessao] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function destroy(string $id): bool {
+        try {
+            db()->prepare('DELETE FROM sessoes WHERE id = ?')->execute([$id]);
+        } catch (PDOException $e) {
+            error_log('[Gamifica][Sessao] ' . $e->getMessage());
+        }
+        return true;
+    }
+
+    public function gc(int $max_lifetime): int|false {
+        try {
+            $stmt = db()->prepare('DELETE FROM sessoes WHERE expira_em < NOW()');
+            $stmt->execute();
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+}
+
 // Inicia sessão segura (uma única vez)
 function session_iniciar(): void {
     if (session_status() === PHP_SESSION_NONE) {
@@ -19,6 +111,7 @@ function session_iniciar(): void {
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
+        session_set_save_handler(new SessaoBancoHandler(), true);
         session_start();
     }
 }
