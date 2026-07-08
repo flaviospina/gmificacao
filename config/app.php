@@ -4,14 +4,33 @@
 //  Gamifica V2 · itthrive.com.br/gamifica
 // ============================================================
 
-// URL base: fixa em produção; detectada automaticamente em
-// desenvolvimento (php -S, localhost) para o sistema rodar em
-// qualquer ambiente sem editar este arquivo.
+// URL base — detectada automaticamente a partir da requisição real
+// (esquema + host + subpasta), para funcionar com www e sem www,
+// http ou https, em qualquer domínio/subpasta, sem editar nada.
+// A env GAMIFICA_BASE_URL tem prioridade; o valor fixo abaixo é
+// usado apenas fora de uma requisição web (ex.: scripts CLI).
 if (getenv('GAMIFICA_BASE_URL')) {
     define('BASE_URL', rtrim(getenv('GAMIFICA_BASE_URL'), '/'));
-} elseif (PHP_SAPI === 'cli-server' || in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'], true)) {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    define('BASE_URL', $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+} elseif (!empty($_SERVER['HTTP_HOST'])) {
+    $https  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+           || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+           || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+    $scheme = $https ? 'https' : 'http';
+
+    // Subpasta da aplicação (ex.: /gamifica) derivada da posição real
+    // dos arquivos em relação ao document root do servidor.
+    $raiz    = str_replace('\\', '/', dirname(__DIR__));
+    $docroot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+    if ($docroot !== '' && str_starts_with($raiz, $docroot)) {
+        $subpasta = rtrim(substr($raiz, strlen($docroot)), '/');
+    } else {
+        // Fallback: deduz a subpasta pelo caminho do script atual
+        $script   = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
+        $subpasta = preg_replace('#/(aluno|professor|coordenador|admin|responsavel|api)?/?[^/]*\.php$#', '', $script);
+        $subpasta = rtrim($subpasta, '/');
+    }
+
+    define('BASE_URL', $scheme . '://' . $_SERVER['HTTP_HOST'] . $subpasta);
 } else {
     define('BASE_URL', 'https://itthrive.com.br/gamifica');
 }
@@ -23,7 +42,7 @@ define('ASSETS_URL',    BASE_URL . '/assets');
 
 // Nome da aplicação
 define('APP_NAME',    'Gamifica');
-define('APP_VERSION', '2.0.0');
+define('APP_VERSION', '2.0.1');
 
 // Configurações de sessão
 define('SESSION_TIMEOUT', 60 * 60 * 8); // 8 horas
