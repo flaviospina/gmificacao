@@ -60,42 +60,42 @@ $google_url = google_auth_url();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login — <?= APP_NAME ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/style.css">
 <style>
 /* Estilos específicos da página de login */
-body{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);min-height:100vh;display:flex;align-items:center;justify-content:center;}
-.login-box{background:#fff;border-radius:24px;padding:2.75rem 2.5rem;width:100%;max-width:430px;box-shadow:0 24px 80px rgba(0,0,0,.35);}
-.logo{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:6px;}
-.logo-ic{width:52px;height:52px;background:linear-gradient(135deg,#7c6ef0,#a855f7);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 8px 24px #7c6ef040;}
-.logo-tx{font-size:30px;font-weight:800;color:#1a1a2e;letter-spacing:-1px;}
-.sub{text-align:center;font-size:13px;color:#aaa;margin-bottom:1.75rem;font-weight:600;}
-.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;background:#fff;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;font-weight:800;color:#1a1a2e;cursor:pointer;transition:.2s;text-decoration:none;font-family:'Nunito',sans-serif;margin-bottom:18px;}
-.btn-google:hover{border-color:#7c6ef0;background:#f5f3ff;}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;}
+.login-box{background:#fff;border:2px solid #e5e9f2;border-bottom-width:6px;border-radius:28px;padding:2.5rem 2.4rem;width:100%;max-width:440px;position:relative;margin-top:40px;}
+.login-mascote{position:absolute;top:-46px;left:50%;transform:translateX(-50%);font-size:64px;line-height:1;animation:flutuar 3s ease-in-out infinite;filter:drop-shadow(0 5px 0 rgba(0,0,0,.08));}
+.logo{display:flex;align-items:center;gap:12px;justify-content:center;margin:14px 0 4px;}
+.logo-ic{width:52px;height:52px;background:linear-gradient(135deg,#58cc02,#7be03a);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 5px 0 #46a302;}
+.logo-tx{font-size:34px;font-weight:800;letter-spacing:-1px;font-family:'Baloo 2',sans-serif;background:linear-gradient(90deg,#58cc02,#1cb0f6,#a560ff);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{text-align:center;font-size:14px;color:#8a8aa3;margin-bottom:1.6rem;font-weight:800;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;background:#fff;border:2px solid #e5e9f2;border-bottom-width:4px;border-radius:16px;font-size:14px;font-weight:900;color:#3b3b4f;cursor:pointer;transition:.15s;text-decoration:none;font-family:'Nunito',sans-serif;margin-bottom:18px;}
+.btn-google:hover{border-color:#1cb0f6;background:#eef8ff;transform:translateY(-2px);}
+.btn-google:active{transform:translateY(1px);border-bottom-width:2px;}
 .btn-google svg{width:20px;height:20px;}
 .divider{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
-.divider hr{flex:1;border:none;border-top:1px solid #f0eff5;}
-.divider span{font-size:12px;color:#ccc;font-weight:700;}
-.fld{margin-bottom:14px;}
-.fld label{font-size:11px;font-weight:800;color:#aaa;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.7px;}
-.fld input{width:100%;padding:13px 15px;border:2px solid #e8e8f0;border-radius:12px;font-size:14px;font-family:'Nunito',sans-serif;outline:none;transition:.2s;color:#1a1a2e;font-weight:600;box-sizing:border-box;}
-.fld input:focus{border-color:#7c6ef0;box-shadow:0 0 0 4px #7c6ef015;}
-.btn-entrar{width:100%;padding:14px;background:linear-gradient(135deg,#7c6ef0,#a855f7);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:.15s;box-shadow:0 6px 20px #7c6ef040;}
-.btn-entrar:hover{transform:translateY(-2px);box-shadow:0 10px 28px #7c6ef050;}
-.links{text-align:center;margin-top:14px;font-size:12px;color:#aaa;font-weight:600;}
-.links a{color:#7c6ef0;cursor:pointer;text-decoration:none;}
-.alerta{padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;margin-bottom:16px;}
-.alerta.erro{background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;}
-.alerta.info{background:#f0fdf4;color:#16a34a;border:1.5px solid #bbf7d0;}
+.divider hr{flex:1;border:none;border-top:2px solid #eef1f8;}
+.divider span{font-size:12px;color:#b9bed1;font-weight:800;}
+.btn-entrar{width:100%;padding:15px;background:#58cc02;color:#fff;border:none;border-radius:18px;font-size:16px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;transition:.12s;box-shadow:0 5px 0 #46a302;letter-spacing:.3px;}
+.btn-entrar:hover{filter:brightness(1.06);}
+.btn-entrar:active{transform:translateY(4px);box-shadow:0 1px 0 #46a302;}
+.links{text-align:center;margin-top:15px;font-size:12.5px;color:#8a8aa3;font-weight:700;}
+.links a{color:#1899d6;cursor:pointer;text-decoration:none;font-weight:900;}
+.alerta{padding:12px 15px;border-radius:14px;font-size:13px;font-weight:800;margin-bottom:16px;border:2px solid;}
+.alerta.erro{background:#ffecec;color:#d43333;border-color:#ffc2c2;}
+.alerta.info{background:#e8f9d8;color:#3f8f0a;border-color:#b8ea86;}
 </style>
 </head>
 <body>
 <div class="login-box">
+  <div class="login-mascote">🦊</div>
   <div class="logo">
     <div class="logo-ic">🎮</div>
     <div class="logo-tx"><?= APP_NAME ?></div>
   </div>
-  <div class="sub">Plataforma de Gamificação Escolar</div>
+  <div class="sub">Aprender virou aventura! 🚀</div>
 
   <?php if ($erro): ?>
     <div class="alerta erro">⚠️ <?= htmlspecialchars($erro) ?></div>

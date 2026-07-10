@@ -113,7 +113,7 @@ function pagina_inicio(string $titulo, string $menu_ativo = ''): void {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= e($titulo) ?> — <?= APP_NAME ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/style.css">
 </head>
 <body>
@@ -141,8 +141,12 @@ function pagina_inicio(string $titulo, string $menu_ativo = ''): void {
     <div class="sb-sec">conta</div>
     <a class="sb-item" href="<?= BASE_URL ?>/logout.php"><em>🚪</em> Sair</a>
 
+    <?php if ($perfil === 'aluno'): ?>
+      <div class="sb-mascote" title="Gami, seu companheiro de aventuras!">🦊</div>
+    <?php endif; ?>
+
     <?php if ($xp_box): ?>
-    <div class="sb-xp">
+    <div class="sb-xp"<?= $perfil === 'aluno' ? '' : ' style="margin-top:auto;"' ?>>
       <div class="sb-xp-label">Nível <?= (int)$xp_box['nivel_atual'] ?> — <?= e($xp_box['nivel_nome']) ?> · 🪙 <?= fmt_num((int)$xp_box['moedas']) ?></div>
       <?php
         $base = (int)$xp_box['xp_minimo'];

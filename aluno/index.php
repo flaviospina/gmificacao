@@ -102,7 +102,26 @@ $conquistas->execute([$aluno_id]);
 $ult_conquistas = $conquistas->fetchAll();
 
 pagina_inicio('Missões', 'missoes');
+
+// Saudação do mascote
+$hora = (int)date('G');
+$oi = $hora < 12 ? 'Bom dia' : ($hora < 18 ? 'Boa tarde' : 'Boa noite');
+$primeiro_nome = e(explode(' ', trim(usuario_nome()))[0]);
+$pendentes = count(array_filter($lista_missoes, fn($m) => !$m['concluida']));
+if ($pendentes > 0) {
+    $fala = "{$oi}, {$primeiro_nome}! 🌟 Você tem <strong>{$pendentes} missão(ões)</strong> esperando. Vamos nessa?";
+} elseif ((int)$ap['streak_dias'] >= 3) {
+    $fala = "{$oi}, {$primeiro_nome}! 🔥 {$ap['streak_dias']} dias seguidos — você está imparável!";
+} else {
+    $fala = "{$oi}, {$primeiro_nome}! Tudo em dia por aqui. Que tal melhorar um recorde? 🚀";
+}
 ?>
+
+<!-- MASCOTE -->
+<div class="hero-kids">
+  <div class="mascote">🦊</div>
+  <div class="balao"><?= $fala ?></div>
+</div>
 
 <!-- XP BANNER -->
 <div class="xp-banner">

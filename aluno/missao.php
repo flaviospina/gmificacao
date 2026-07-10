@@ -135,9 +135,29 @@ pagina_inicio($atv['titulo'], 'missoes');
 </div>
 
 <?php if ($resultado): ?>
-<div class="card" style="text-align:center;border:2px solid <?= $resultado['pct'] >= 60 ? '#bbf7d0' : '#fde68a' ?>;">
-  <div style="font-size:44px;"><?= $resultado['pct'] >= 100 ? '💯' : ($resultado['pct'] >= 60 ? '🎉' : '💪') ?></div>
-  <div style="font-size:20px;font-weight:800;margin:6px 0;">Você fez <?= (int)$resultado['acertos'] ?> de <?= (int)$resultado['total'] ?> (<?= round($resultado['pct']) ?>%)</div>
+<div class="card celebrar" id="cardResultado" style="text-align:center;border-color:<?= $resultado['pct'] >= 60 ? '#b8ea86' : '#ffe9a3' ?>;">
+  <div class="pop" style="font-size:64px;"><?= $resultado['pct'] >= 100 ? '🏆' : ($resultado['pct'] >= 60 ? '🎉' : '💪') ?></div>
+  <div style="font-size:24px;font-weight:800;margin:6px 0;font-family:'Baloo 2',sans-serif;">
+    <?= $resultado['pct'] >= 100 ? 'PERFEITO!' : ($resultado['pct'] >= 60 ? 'Muito bem!' : 'Boa tentativa!') ?>
+  </div>
+  <div style="font-size:17px;font-weight:800;margin-bottom:4px;">Você fez <?= (int)$resultado['acertos'] ?> de <?= (int)$resultado['total'] ?> (<?= round($resultado['pct']) ?>%)</div>
+  <?php if ($resultado['pct'] >= 60): ?>
+  <script>
+  (function(){
+    const card = document.getElementById('cardResultado');
+    const emojis = ['🎉','⭐','🎊','✨','💛','💚','💙'];
+    for (let i = 0; i < 24; i++) {
+      const c = document.createElement('span');
+      c.className = 'confete';
+      c.textContent = emojis[i % emojis.length];
+      c.style.left = (3 + Math.random() * 94) + '%';
+      c.style.animationDuration = (1.6 + Math.random() * 1.8) + 's';
+      c.style.animationDelay = (Math.random() * 0.9) + 's';
+      card.appendChild(c);
+    }
+  })();
+  </script>
+  <?php endif; ?>
   <div style="font-size:14px;font-weight:700;color:#7c6ef0;">
     <?php if ($resultado['delta'] > 0): ?>
       +<?= (int)$resultado['delta'] ?> XP novos creditados! 🚀
