@@ -222,45 +222,81 @@ if (in_array($atv['tipo'], ['quiz', 'leitura'], true)):
     </form>
     <?php endif; ?>
 
-<?php // ══════════ CAÇA-PALAVRAS ══════════
+<?php // ══════════ CAÇA-PALAVRAS (com dicas) ══════════
 elseif ($atv['tipo'] === 'cacapalavras'):
     $dados = cacapalavras_grade($id);
     if (!$dados): ?>
       <div class="alert alert-info">O caça-palavras ainda não foi configurado. Avise seu professor. 😉</div>
-    <?php else: ?>
+    <?php else:
+      $itens = $dados['itens'];
+      $ncols = count($dados['grade'][0] ?? []);
+      // Layout adaptável ao ANO do Fundamental I (letras maiores nos anos iniciais).
+      // O ano vem do nome da turma (ex.: "1º Ano" → 1); se não houver, usa o tamanho da grade.
+      $tnome = '';
+      $tq = $pdo->prepare('SELECT nome FROM turmas WHERE id = ?');
+      $tq->execute([(int)$atv['turma_id']]);
+      $tnome = (string)($tq->fetchColumn() ?: '');
+      $ano = (preg_match('/(\d)/', $tnome, $mm)) ? (int)$mm[1] : 0;
+      if ($ano >= 1 && $ano <= 5) {
+          $gclass = $ano <= 2 ? 'caca-g1' : ($ano === 3 ? 'caca-g2' : 'caca-g3');
+      } else {
+          $gclass = $ncols <= 9 ? 'caca-g1' : ($ncols <= 11 ? 'caca-g2' : 'caca-g3');
+      }
+      $total_p = count($itens);
+    ?>
     <div class="card">
-      <div class="card-title">🔤 Encontre as palavras — clique na primeira e na última letra</div>
-      <div class="caca-lista">
-        <?php foreach ($dados['palavras'] as $p): ?><span class="caca-palavra" data-palavra="<?= e($p) ?>"><?= e($p) ?></span><?php endforeach; ?>
+      <div class="card-title">🔎 Leia a pista e ache a palavra na grade</div>
+      <div style="font-size:13px;color:var(--tinta-suave,#8a8aa0);font-weight:700;margin-bottom:10px;">
+        Clique na <b>primeira</b> e depois na <b>última</b> letra da palavra. Vale em qualquer direção!
       </div>
-      <table class="caca-grade" id="grade">
-        <?php foreach ($dados['grade'] as $l => $linha): ?>
-        <tr><?php foreach ($linha as $c => $letra): ?><td data-l="<?= $l ?>" data-c="<?= $c ?>"><?= e($letra) ?></td><?php endforeach; ?></tr>
-        <?php endforeach; ?>
-      </table>
-      <form method="POST" id="formCaca" style="text-align:center;margin-top:14px;">
+      <div class="caca-wrap">
+        <div class="caca-grade-box">
+          <table class="caca-grade <?= $gclass ?>" id="grade">
+            <?php foreach ($dados['grade'] as $l => $linha): ?>
+            <tr><?php foreach ($linha as $c => $letra): ?><td data-l="<?= $l ?>" data-c="<?= $c ?>"><?= e($letra) ?></td><?php endforeach; ?></tr>
+            <?php endforeach; ?>
+          </table>
+        </div>
+        <div class="caca-pistas">
+          <div class="caca-pistas-tit">Pistas <span id="cacaContador" class="badge bp">0/<?= $total_p ?></span></div>
+          <?php foreach ($itens as $i => $it): ?>
+            <div class="pista" id="pista-<?= $i ?>" data-palavra="<?= e($it['p']) ?>">
+              <span class="pista-num"><?= $i + 1 ?></span>
+              <span class="pista-txt"><?= e($it['d'] !== '' ? $it['d'] : 'Ache: ' . $it['p']) ?></span>
+              <span class="pista-resp" hidden>✓ <?= e($it['p']) ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <form method="POST" id="formCaca" style="text-align:center;margin-top:16px;">
         <?= csrf_input() ?>
         <input type="hidden" name="achadas" id="achadas" value="">
-        <div id="statusCaca" style="font-size:13px;font-weight:700;color:#888;margin-bottom:10px;">0 de <?= count($dados['palavras']) ?> palavras encontradas</div>
-        <button type="submit" class="btn btn-primary">Finalizar ✓</button>
+        <button type="submit" class="btn btn-primary" style="font-size:15px;padding:12px 30px;">Finalizar ✓</button>
       </form>
     </div>
     <script>
     (function(){
-      const palavras = <?= json_encode($dados['palavras']) ?>;
+      const itens = <?= json_encode(array_column($itens, 'p')) ?>;
       const achadas = new Set();
       let inicio = null;
       const grade = document.getElementById('grade');
-      const status = document.getElementById('statusCaca');
+      const contador = document.getElementById('cacaContador');
+
+      function marcar(alvo){
+        if (achadas.has(alvo)) return;
+        achadas.add(alvo);
+        document.querySelectorAll('.pista[data-palavra="' + alvo + '"]').forEach(p => {
+          p.classList.add('achada');
+          const r = p.querySelector('.pista-resp'); if (r) r.hidden = false;
+        });
+        document.getElementById('achadas').value = Array.from(achadas).join(',');
+        contador.textContent = achadas.size + '/' + itens.length;
+      }
 
       grade.addEventListener('click', function(ev){
         const td = ev.target.closest('td');
         if (!td) return;
-        if (!inicio) {
-          inicio = td;
-          td.classList.add('sel');
-          return;
-        }
+        if (!inicio) { inicio = td; td.classList.add('sel'); return; }
         const l1 = +inicio.dataset.l, c1 = +inicio.dataset.c;
         const l2 = +td.dataset.l,     c2 = +td.dataset.c;
         const dl = Math.sign(l2 - l1), dc = Math.sign(c2 - c1);
@@ -269,24 +305,16 @@ elseif ($atv['tipo'] === 'cacapalavras'):
         let celulas = [], palavra = '';
         if (reta) {
           for (let i = 0; i < len; i++) {
-            const cel = grade.querySelector('td[data-l="' + (l1 + dl * i) + '"][data-c="' + (c1 + dc * i) + '"]');
+            const cel = grade.querySelector('td[data-l="' + (l1 + dl*i) + '"][data-c="' + (c1 + dc*i) + '"]');
             if (!cel) { celulas = []; break; }
-            celulas.push(cel);
-            palavra += cel.textContent.trim();
+            celulas.push(cel); palavra += cel.textContent.trim();
           }
         }
         const invertida = palavra.split('').reverse().join('');
         let alvo = null;
-        if (palavras.includes(palavra)) alvo = palavra;
-        else if (palavras.includes(invertida)) alvo = invertida;
-
-        if (alvo && !achadas.has(alvo)) {
-          achadas.add(alvo);
-          celulas.forEach(c => c.classList.add('achada'));
-          document.querySelector('.caca-palavra[data-palavra="' + alvo + '"]').classList.add('achada');
-          document.getElementById('achadas').value = Array.from(achadas).join(',');
-          status.textContent = achadas.size + ' de ' + palavras.length + ' palavras encontradas';
-        }
+        if (itens.includes(palavra)) alvo = palavra;
+        else if (itens.includes(invertida)) alvo = invertida;
+        if (alvo) { celulas.forEach(c => c.classList.add('achada')); marcar(alvo); }
         inicio.classList.remove('sel');
         inicio = null;
       });

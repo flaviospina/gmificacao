@@ -14,6 +14,8 @@ PHP 8.2+ · MySQL 8 / MariaDB 10.6+ · Apache (Hostgator compartilhado) — sem 
 1. Envie os arquivos para `public_html/gamifica/`.
 2. Crie o banco no cPanel e importe **`sql/gamifica_v2.sql`** (instalação nova).
    Opcional: importe `sql/dados_demo.sql` para dados de demonstração.
+   Opcional: importe `sql/cacapalavras_biblioteca.sql` para 40 caça-palavras prontos
+   (1º ao 5º ano × 8 disciplinas, cada palavra com dica). Requer o professor demo.
 3. Edite `config/db.php` com host, banco, usuário e senha do cPanel.
 4. Acesse `/gamifica/login.php` — admin padrão: `admin@escola.edu.br` / `Gamifica@2026` (troque no primeiro acesso).
 5. (Opcional) Configure o Google OAuth em `config/google.php` (instruções no próprio arquivo).

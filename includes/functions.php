@@ -455,8 +455,42 @@ function log_erro(string $contexto, string $msg): void {
 // ============================================================
 
 /**
+ * Normaliza uma palavra para a grade: maiúscula, sem acentos, só letras A-Z.
+ * (Caça-palavras não exibe acentos; o texto da dica mantém o português correto.)
+ */
+function caca_normalizar(string $palavra): string {
+    $mapa = ['Á'=>'A','À'=>'A','Â'=>'A','Ã'=>'A','Ä'=>'A','É'=>'E','Ê'=>'E','È'=>'E','Ë'=>'E',
+             'Í'=>'I','Î'=>'I','Ì'=>'I','Ï'=>'I','Ó'=>'O','Ô'=>'O','Õ'=>'O','Ò'=>'O','Ö'=>'O',
+             'Ú'=>'U','Û'=>'U','Ù'=>'U','Ü'=>'U','Ç'=>'C','Ñ'=>'N'];
+    $p = strtr(mb_strtoupper(trim($palavra)), $mapa);
+    return preg_replace('/[^A-Z]/', '', $p);
+}
+
+/**
+ * Lê o campo palavras (JSON) aceitando dois formatos:
+ *   ["GATO", ...]                          (legado, sem dica)
+ *   [{"p":"GATO","d":"Animal que mia"}, …] (com dica)
+ * Retorna lista de ['p' => PALAVRA_NORMALIZADA, 'd' => dica].
+ */
+function caca_itens(string $json): array {
+    $bruto = json_decode($json, true) ?: [];
+    $itens = [];
+    foreach ($bruto as $x) {
+        if (is_array($x)) {
+            $p = caca_normalizar((string)($x['p'] ?? ''));
+            $d = trim((string)($x['d'] ?? ''));
+        } else {
+            $p = caca_normalizar((string)$x);
+            $d = '';
+        }
+        if (mb_strlen($p) >= 3) $itens[] = ['p' => $p, 'd' => $d];
+    }
+    return $itens;
+}
+
+/**
  * Gera (ou retorna a já gerada) grade do caça-palavras.
- * Retorna ['grade' => [[letras]], 'palavras' => [...]].
+ * Retorna ['grade' => [[letras]], 'palavras' => [strings], 'itens' => [{p,d}]].
  */
 function cacapalavras_grade(int $atividade_id): ?array {
     $pdo = db();
@@ -465,15 +499,13 @@ function cacapalavras_grade(int $atividade_id): ?array {
     $cfg = $stmt->fetch();
     if (!$cfg) return null;
 
-    $palavras = array_values(array_filter(array_map(
-        fn($p) => mb_strtoupper(trim($p)),
-        json_decode($cfg['palavras'], true) ?: []
-    )));
-    if (!$palavras) return null;
+    $itens = caca_itens($cfg['palavras']);
+    if (!$itens) return null;
+    $palavras = array_values(array_unique(array_column($itens, 'p')));
 
     if (!empty($cfg['grade_gerada'])) {
         $grade = json_decode($cfg['grade_gerada'], true);
-        if ($grade) return ['grade' => $grade, 'palavras' => $palavras];
+        if ($grade) return ['grade' => $grade, 'palavras' => $palavras, 'itens' => $itens];
     }
 
     $lin = max(8, (int)$cfg['grid_linhas']);
@@ -514,5 +546,5 @@ function cacapalavras_grade(int $atividade_id): ?array {
     $pdo->prepare('UPDATE cacapalavras_config SET grade_gerada = ? WHERE atividade_id = ?')
         ->execute([json_encode($grade), $atividade_id]);
 
-    return ['grade' => $grade, 'palavras' => $palavras];
+    return ['grade' => $grade, 'palavras' => $palavras, 'itens' => $itens];
 }

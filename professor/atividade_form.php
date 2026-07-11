@@ -104,17 +104,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_valido($_POST['csrf_token'] ??
             flash_set('Etapa removida.');
         }
         if ($acao === 'salvar_palavras') {
-            $palavras = array_values(array_filter(array_map(
-                fn($p) => mb_strtoupper(preg_replace('/[^\p{L}]/u', '', trim($p))),
-                explode("\n", $_POST['palavras'] ?? '')
-            ), fn($p) => mb_strlen($p) >= 3));
-            if ($palavras) {
+            // Cada linha: "PALAVRA | dica opcional". A palavra é normalizada (sem acentos).
+            $itens = [];
+            $maior = 0;
+            foreach (explode("\n", $_POST['palavras'] ?? '') as $linha) {
+                $partes = explode('|', $linha, 2);
+                $p = caca_normalizar($partes[0] ?? '');
+                $d = trim($partes[1] ?? '');
+                if (mb_strlen($p) >= 3) {
+                    $itens[] = ['p' => $p, 'd' => $d];
+                    $maior = max($maior, mb_strlen($p));
+                }
+            }
+            if ($itens) {
+                // Grade quadrada: cabe a maior palavra e dá folga (mín. 8, máx. 15)
+                $lado = max(8, min(15, $maior + 2));
                 $pdo->prepare(
                     'INSERT INTO cacapalavras_config (atividade_id, grid_linhas, grid_colunas, palavras, grade_gerada)
-                     VALUES (?, 12, 12, ?, NULL)
-                     ON DUPLICATE KEY UPDATE palavras = VALUES(palavras), grade_gerada = NULL'
-                )->execute([$id, json_encode($palavras, JSON_UNESCAPED_UNICODE)]);
-                flash_set('Palavras salvas — a grade será gerada automaticamente!');
+                     VALUES (?, ?, ?, ?, NULL)
+                     ON DUPLICATE KEY UPDATE grid_linhas = VALUES(grid_linhas), grid_colunas = VALUES(grid_colunas),
+                                             palavras = VALUES(palavras), grade_gerada = NULL'
+                )->execute([$id, $lado, $lado, json_encode($itens, JSON_UNESCAPED_UNICODE)]);
+                flash_set('Palavras e dicas salvas — a grade será gerada automaticamente!');
             } else {
                 flash_set('Informe ao menos uma palavra com 3+ letras (uma por linha).', 'erro');
             }
@@ -275,22 +286,27 @@ elseif ($atv['tipo'] === 'projeto'):
   <div style="font-size:12px;color:#888;font-weight:600;margin-top:8px;">💡 O XP é creditado ao aprovar cada entrega em <a href="portfolio.php" style="color:#7c6ef0;">Portfólio &amp; Entregas</a>.</div>
 </div>
 
-<?php // ── CAÇA-PALAVRAS ──
+<?php // ── CAÇA-PALAVRAS (com dicas) ──
 elseif ($atv['tipo'] === 'cacapalavras'):
     $cc = $pdo->prepare('SELECT palavras FROM cacapalavras_config WHERE atividade_id = ?');
     $cc->execute([$id]);
-    $palavras = json_decode($cc->fetchColumn() ?: '[]', true);
+    $itens = caca_itens($cc->fetchColumn() ?: '[]');
+    $linhas = array_map(fn($it) => $it['d'] !== '' ? $it['p'] . ' | ' . $it['d'] : $it['p'], $itens);
 ?>
 <div class="card">
-  <div class="card-title">🔤 Palavras do caça-palavras</div>
+  <div class="card-title">🔤 Palavras e dicas do caça-palavras</div>
+  <div class="alert alert-info" style="margin-bottom:12px;">
+    Uma por linha, no formato <b>PALAVRA | dica</b>. O aluno lê a dica e caça a palavra na grade.<br>
+    Acentos são removidos automaticamente (a grade não usa acentos). A grade se ajusta ao tamanho das palavras.
+  </div>
   <form method="POST">
     <?= csrf_input() ?>
     <input type="hidden" name="acao" value="salvar_palavras">
     <div class="fld">
-      <label>Uma palavra por linha (3+ letras, sem espaços/acentos ficam melhores)</label>
-      <textarea name="palavras" rows="6" required placeholder="TERRA&#10;MARTE&#10;VENUS"><?= e(implode("\n", $palavras)) ?></textarea>
+      <label>Palavras com dicas (uma por linha)</label>
+      <textarea name="palavras" rows="8" required placeholder="LEAO | Animal conhecido como o rei da selva 🦁&#10;GATO | Bicho de estimação que mia e gosta de dormir&#10;ZEBRA | Cavalo listrado de preto e branco"><?= e(implode("\n", $linhas)) ?></textarea>
     </div>
-    <button type="submit" class="btn btn-primary">Salvar palavras</button>
+    <button type="submit" class="btn btn-primary">Salvar palavras e dicas</button>
   </form>
 </div>
 

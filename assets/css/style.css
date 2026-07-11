@@ -441,20 +441,36 @@ input::placeholder, textarea::placeholder { color: #b9bed1; font-weight: 600; }
 .alt-c2 { background: #d89e00; box-shadow: 0 5px 0 #a87b00; }
 .alt-c3 { background: #26890c; box-shadow: 0 5px 0 #1c6609; }
 
-/* ── Caça-palavras ── */
-.caca-grade { border-collapse: separate; border-spacing: 3px; margin: 0 auto; user-select: none; }
+/* ── Caça-palavras (grade + pistas, minimalista) ── */
+.caca-wrap { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+.caca-grade-box { flex: 0 0 auto; }
+.caca-grade { border-collapse: separate; border-spacing: 4px; margin: 0 auto; user-select: none; }
 .caca-grade td {
-  width: 32px; height: 32px; text-align: center;
-  border: 2px solid var(--linha); border-radius: 9px;
-  background: var(--papel);
-  font-weight: 900; font-size: 14px; cursor: pointer; padding: 0; transition: .1s;
+  text-align: center; border: 2px solid var(--linha); border-radius: 10px;
+  background: var(--papel); font-weight: 900; cursor: pointer; padding: 0; transition: .1s;
+  color: var(--tinta);
 }
-.caca-grade td:hover { border-color: var(--azul); transform: scale(1.12); }
+.caca-grade td:hover { border-color: var(--azul); transform: scale(1.1); }
 .caca-grade td.sel { background: #ddd0ff; border-color: var(--roxo); }
 .caca-grade td.achada { background: #c9f3a1; border-color: var(--verde); color: #2f7a06; }
-.caca-lista { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
-.caca-palavra { padding: 5px 14px; border-radius: 99px; background: #f1f3f9; border: 1.5px solid var(--linha); font-size: 13px; font-weight: 900; }
-.caca-palavra.achada { background: #e8f9d8; border-color: #b8ea86; color: #3f8f0a; text-decoration: line-through; }
+/* Tamanho adaptável ao ano: grades menores (anos iniciais) = letras maiores */
+.caca-g1 td { width: 46px; height: 46px; font-size: 24px; }   /* 1º–2º ano */
+.caca-g2 td { width: 40px; height: 40px; font-size: 20px; }   /* 3º ano */
+.caca-g3 td { width: 34px; height: 34px; font-size: 16px; }   /* 4º–5º ano */
+
+.caca-pistas { flex: 1 1 260px; min-width: 240px; max-width: 460px; }
+.caca-pistas-tit { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; color: var(--tinta-suave); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.pista { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--linha); border-radius: 14px; margin-bottom: 8px; background: var(--papel); transition: .15s; }
+.pista-num { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; background: var(--ceu); color: var(--azul); font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+.pista-txt { flex: 1; font-size: 14px; font-weight: 700; color: var(--tinta); line-height: 1.25; }
+.pista-resp { font-size: 13px; font-weight: 900; color: var(--verde-esc); white-space: nowrap; }
+.pista.achada { background: #f2fbe9; border-color: #c9f3a1; }
+.pista.achada .pista-num { background: var(--verde); color: #fff; }
+.pista.achada .pista-txt { color: var(--tinta-suave); text-decoration: line-through; }
+@media (max-width: 640px) {
+  .caca-g1 td { width: 38px; height: 38px; font-size: 20px; }
+  .caca-g2 td, .caca-g3 td { width: 32px; height: 32px; font-size: 15px; }
+}
 
 /* ── Chat/mensagens ── */
 .chat-box { max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 0; }
