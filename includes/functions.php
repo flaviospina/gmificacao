@@ -455,6 +455,31 @@ function log_erro(string $contexto, string $msg): void {
 // ============================================================
 
 /**
+ * Tema visual do caça-palavras: um cenário lúdico por DISCIPLINA
+ * e uma cor de destaque por ANO. Dá a cada série+matéria um visual próprio.
+ */
+function caca_tema(string $disciplina, int $ano): array {
+    $d = caca_normalizar($disciplina); // sem acento, maiúsculo
+    // Mapeia disciplina → cenário
+    $mapa = [
+        'MATEMATICA' => ['tema'=>'NÚMEROS',  'ceu1'=>'#e2e9ff','ceu2'=>'#c4d2ff','chao'=>'#7c8cf0','cor'=>'#5b6ee0','emojis'=>['➕','➗','🔢','📐','📊','✖️','🧮','➖']],
+        'PORTUGUES'  => ['tema'=>'LETRAS',   'ceu1'=>'#fff3d6','ceu2'=>'#ffe1a8','chao'=>'#f0a94e','cor'=>'#e07f00','emojis'=>['📚','✏️','🔤','📖','📝','💬','🅰️','📕']],
+        'INGLES'     => ['tema'=>'ENGLISH',  'ceu1'=>'#ffe1e1','ceu2'=>'#dbe9ff','chao'=>'#ff8b8b','cor'=>'#1cb0f6','emojis'=>['🌍','✈️','🔤','💬','⭐','🎈','📣','🗽']],
+        'EDUCACAOFISICA'=>['tema'=>'ESPORTES','ceu1'=>'#dff6dc','ceu2'=>'#bdee97','chao'=>'#58cc02','cor'=>'#46a302','emojis'=>['⚽','🏀','🏐','🏃','🏅','🥅','🏆','🤸']],
+        'CIENCIAS'   => ['tema'=>'NATUREZA', 'ceu1'=>'#cdefff','ceu2'=>'#a8e6ff','chao'=>'#58cc02','cor'=>'#16a34a','emojis'=>['🌳','🌻','☀️','🦋','🐛','🍃','🌈','🐝']],
+        'ARTES'      => ['tema'=>'ARTE',     'ceu1'=>'#ffe4f7','ceu2'=>'#ecd6ff','chao'=>'#ff7ac3','cor'=>'#a560ff','emojis'=>['🎨','🖌️','🎭','🌈','✂️','🖍️','🎵','⭐']],
+        'GEOGRAFIA'  => ['tema'=>'MUNDO',    'ceu1'=>'#d6f0ff','ceu2'=>'#c4ead6','chao'=>'#3fa34d','cor'=>'#1899d6','emojis'=>['🗺️','⛰️','🌊','🧭','🌍','🏔️','🏝️','🧊']],
+        'HISTORIA'   => ['tema'=>'HISTÓRIA', 'ceu1'=>'#f6e7c6','ceu2'=>'#ffe6a8','chao'=>'#caa04a','cor'=>'#b8860b','emojis'=>['🏛️','📜','👑','⏳','🗿','⚔️','🏺','🕰️']],
+    ];
+    $base = $mapa[$d] ?? ['tema'=>'PALAVRAS','ceu1'=>'#e8f0ff','ceu2'=>'#d3e2ff','chao'=>'#7c8cf0','cor'=>'#7c6ef0','emojis'=>['⭐','✨','🎈','🎨','📚','🔤']];
+    // Cor de destaque por ano (faixa/badge)
+    $cores_ano = [1=>'#ff5d5d', 2=>'#ff9600', 3=>'#f5b800', 4=>'#1cb0f6', 5=>'#a560ff'];
+    $base['cor_ano'] = $cores_ano[$ano] ?? $base['cor'];
+    $base['ano'] = $ano;
+    return $base;
+}
+
+/**
  * Normaliza uma palavra para a grade: maiúscula, sem acentos, só letras A-Z.
  * (Caça-palavras não exibe acentos; o texto da dica mantém o português correto.)
  */

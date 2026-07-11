@@ -243,36 +243,54 @@ elseif ($atv['tipo'] === 'cacapalavras'):
           $gclass = $ncols <= 9 ? 'caca-g1' : ($ncols <= 11 ? 'caca-g2' : 'caca-g3');
       }
       $total_p = count($itens);
+      $tema = caca_tema($atv['disciplina'], $ano);
     ?>
-    <div class="card">
-      <div class="card-title">🔎 Leia a pista e ache a palavra na grade</div>
-      <div style="font-size:13px;color:var(--tinta-suave,#8a8aa0);font-weight:700;margin-bottom:10px;">
-        Clique na <b>primeira</b> e depois na <b>última</b> letra da palavra. Vale em qualquer direção!
+    <div class="caca-cena <?= $gclass ?>"
+         style="--ceu1:<?= $tema['ceu1'] ?>;--ceu2:<?= $tema['ceu2'] ?>;--chao:<?= $tema['chao'] ?>;--tema:<?= $tema['cor'] ?>;--ano-cor:<?= $tema['cor_ano'] ?>;">
+      <!-- Enfeites do cenário (variam por disciplina) -->
+      <div class="caca-deco" aria-hidden="true">
+        <?php
+          $pos = [[3,7],[10,84],[22,15],[16,60],[75,90],[84,10],[70,50],[90,72]];
+          foreach ($tema['emojis'] as $k => $emo):
+            [$t,$l] = $pos[$k % count($pos)];
+        ?>
+          <span class="deco d<?= $k % 4 ?>" style="top:<?= $t ?>%;left:<?= $l ?>%;"><?= $emo ?></span>
+        <?php endforeach; ?>
       </div>
+
+      <!-- Cabeçalho do jogo -->
+      <div class="caca-topo">
+        <span class="caca-ano-badge"><?= $ano >= 1 && $ano <= 5 ? $ano . 'º Ano' : e($tnome) ?></span>
+        <div class="caca-tema-pill"><?= e($tema['tema']) ?></div>
+      </div>
+      <div class="caca-instr">🔎 Leia a pista e ache a palavra! Clique na <b>primeira</b> e na <b>última</b> letra. Vale em qualquer direção.</div>
+
       <div class="caca-wrap">
-        <div class="caca-grade-box">
-          <table class="caca-grade <?= $gclass ?>" id="grade">
+        <!-- Grade dentro de um cartão branco -->
+        <div class="caca-painel">
+          <table class="caca-grade" id="grade">
             <?php foreach ($dados['grade'] as $l => $linha): ?>
             <tr><?php foreach ($linha as $c => $letra): ?><td data-l="<?= $l ?>" data-c="<?= $c ?>"><?= e($letra) ?></td><?php endforeach; ?></tr>
             <?php endforeach; ?>
           </table>
         </div>
+        <!-- Pistas coloridas -->
         <div class="caca-pistas">
-          <div class="caca-pistas-tit">Pistas <span id="cacaContador" class="badge bp">0/<?= $total_p ?></span></div>
+          <div class="caca-pistas-tit">Pistas <span id="cacaContador" class="caca-contador">0/<?= $total_p ?></span></div>
           <?php foreach ($itens as $i => $it): ?>
-            <div class="pista" id="pista-<?= $i ?>" data-palavra="<?= e($it['p']) ?>">
+            <div class="pista hlc-<?= $i % 6 ?>" id="pista-<?= $i ?>" data-palavra="<?= e($it['p']) ?>">
               <span class="pista-num"><?= $i + 1 ?></span>
               <span class="pista-txt"><?= e($it['d'] !== '' ? $it['d'] : 'Ache: ' . $it['p']) ?></span>
               <span class="pista-resp" hidden>✓ <?= e($it['p']) ?></span>
             </div>
           <?php endforeach; ?>
+          <form method="POST" id="formCaca" style="margin-top:14px;">
+            <?= csrf_input() ?>
+            <input type="hidden" name="achadas" id="achadas" value="">
+            <button type="submit" class="caca-finalizar">Finalizar ✓</button>
+          </form>
         </div>
       </div>
-      <form method="POST" id="formCaca" style="text-align:center;margin-top:16px;">
-        <?= csrf_input() ?>
-        <input type="hidden" name="achadas" id="achadas" value="">
-        <button type="submit" class="btn btn-primary" style="font-size:15px;padding:12px 30px;">Finalizar ✓</button>
-      </form>
     </div>
     <script>
     (function(){
@@ -281,16 +299,21 @@ elseif ($atv['tipo'] === 'cacapalavras'):
       let inicio = null;
       const grade = document.getElementById('grade');
       const contador = document.getElementById('cacaContador');
+      const total = itens.length;
 
-      function marcar(alvo){
+      function marcar(alvo, celulas){
         if (achadas.has(alvo)) return;
         achadas.add(alvo);
+        const idx = itens.indexOf(alvo);
+        const cls = 'hl-' + (idx % 6);
+        celulas.forEach(c => { c.classList.add('achada', cls); });
         document.querySelectorAll('.pista[data-palavra="' + alvo + '"]').forEach(p => {
           p.classList.add('achada');
           const r = p.querySelector('.pista-resp'); if (r) r.hidden = false;
         });
         document.getElementById('achadas').value = Array.from(achadas).join(',');
-        contador.textContent = achadas.size + '/' + itens.length;
+        contador.textContent = achadas.size + '/' + total;
+        if (achadas.size === total) contador.classList.add('completo');
       }
 
       grade.addEventListener('click', function(ev){
@@ -314,7 +337,7 @@ elseif ($atv['tipo'] === 'cacapalavras'):
         let alvo = null;
         if (itens.includes(palavra)) alvo = palavra;
         else if (itens.includes(invertida)) alvo = invertida;
-        if (alvo) { celulas.forEach(c => c.classList.add('achada')); marcar(alvo); }
+        if (alvo) marcar(alvo, celulas);
         inicio.classList.remove('sel');
         inicio = null;
       });
